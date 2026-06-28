@@ -1,0 +1,168 @@
+#!/bin/sh
+
+BB=/usr/bin/busybox
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+export PATH
+CONSOLE_ROWS=${RTPVM_CONSOLE_ROWS:-40}
+CONSOLE_COLUMNS=${RTPVM_CONSOLE_COLUMNS:-120}
+
+log() {
+    echo "rtpvm-rcS: $*" >/dev/kmsg 2>/dev/null || true
+}
+
+log_console() {
+    log "$*"
+    if [ -c /dev/console ]; then
+        echo "rtpvm-rcS: $*" >/dev/console 2>/dev/null || true
+    else
+        echo "rtpvm-rcS: $*" 2>/dev/null || true
+    fi
+}
+
+mount_fs() {
+    type=$1
+    source=$2
+    target=$3
+    opts=${4:-}
+
+    $BB mkdir -p "$target"
+    if [ -n "$opts" ]; then
+        $BB mount -t "$type" -o "$opts" "$source" "$target" 2>/dev/null || true
+    else
+        $BB mount -t "$type" "$source" "$target" 2>/dev/null || true
+    fi
+}
+
+run_with_timeout() {
+    timeout_seconds=$1
+    shift
+
+    "$@" &
+    child_pid=$!
+    (
+        $BB sleep "$timeout_seconds"
+        kill "$child_pid" 2>/dev/null || true
+        $BB sleep 1
+        kill -9 "$child_pid" 2>/dev/null || true
+    ) &
+    watchdog_pid=$!
+
+    wait "$child_pid"
+    rc=$?
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+
+    case "$rc" in
+        137|143) return 124 ;;
+        *) return "$rc" ;;
+    esac
+}
+
+load_module() {
+    module=$1
+    timeout_seconds=${2:-4}
+    [ -n "$module" ] || return 0
+
+    run_with_timeout "$timeout_seconds" /sbin/modprobe -q "$module" 2>/tmp/modprobe.err
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+        log_console "loaded module $module"
+        return 0
+    fi
+
+    error=$($BB cat /tmp/modprobe.err 2>/dev/null || true)
+    log_console "failed to load module $module rc=$rc ${error}"
+    return "$rc"
+}
+
+ensure_hvc_console_node() {
+    [ -c /dev/hvc0 ] && return 0
+
+    hvc_major=$($BB awk '$2 == "hvc" { print $1 }' /proc/devices 2>/dev/null || true)
+    if [ -n "$hvc_major" ]; then
+        $BB mknod /dev/hvc0 c "$hvc_major" 0 2>/dev/null || true
+    fi
+}
+
+log "started"
+
+mount_fs devtmpfs devtmpfs /dev "mode=0755"
+if [ ! -c /dev/console ]; then
+    mount_fs tmpfs tmpfs /dev "mode=0755"
+fi
+[ -c /dev/console ] || $BB mknod /dev/console c 5 1 2>/dev/null || true
+[ -c /dev/null ] || $BB mknod /dev/null c 1 3 2>/dev/null || true
+[ -c /dev/kmsg ] || $BB mknod /dev/kmsg c 1 11 2>/dev/null || true
+$BB chmod 600 /dev/console 2>/dev/null || true
+$BB chmod 666 /dev/null 2>/dev/null || true
+mount_fs proc proc /proc
+mount_fs sysfs sysfs /sys
+mount_fs devpts devpts /dev/pts "gid=5,mode=0620"
+mount_fs tmpfs tmpfs /run "mode=0755"
+mount_fs tmpfs tmpfs /tmp "mode=1777"
+
+$BB mkdir -p /etc /root /var/log
+$BB ln -sf /proc/mounts /etc/mtab
+$BB ln -sf /proc/self/fd /dev/fd
+$BB hostname alpine-rtpvm
+
+cat >/etc/profile <<'EOF'
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+export HOME=/root
+export TERM=${TERM:-xterm-256color}
+export PAGER=more
+export LINES=${RTPVM_CONSOLE_ROWS:-40}
+export COLUMNS=${RTPVM_CONSOLE_COLUMNS:-120}
+export PS1='\h:\w# '
+alias ll='ls -al'
+alias reboot='echo "Stop and restart the VM from the host app."'
+EOF
+
+cat >/etc/motd <<'EOF'
+Alpine RTPVM initramfs
+
+This environment runs entirely from RAM. Files written here are discarded when
+the VM stops. Select a scratch disk in the host app only if you explicitly want
+temporary block storage attached to the VM.
+
+BusyBox init starts a non-blocking RTPVM network one-shot for VZNAT WireGuard
+and fixed usb0 RNDIS routing. Re-run /usr/local/sbin/init-network manually if
+the network device appears after the one-shot exits.
+EOF
+
+if [ -e /proc/sys/kernel/hotplug ] && [ -x /sbin/mdev ]; then
+    echo /sbin/mdev >/proc/sys/kernel/hotplug
+    /sbin/mdev -s 2>/dev/null || true
+fi
+
+MODULES=""
+for opt in $($BB cat /proc/cmdline); do
+    case "$opt" in
+    modules=*) MODULES=${opt#modules=} ;;
+    esac
+done
+
+log "loading console modules before hvc0 shell setup"
+load_module virtio_pci 1 || true
+load_module virtio_mmio 1 || true
+load_module virtio_console 1 || true
+ensure_hvc_console_node
+if [ -c /dev/hvc0 ]; then
+    $BB stty rows "$CONSOLE_ROWS" columns "$CONSOLE_COLUMNS" </dev/hvc0 2>/dev/null || true
+fi
+
+if [ -n "$MODULES" ]; then
+    log_console "loading modules: $MODULES"
+    old_ifs=$IFS
+    IFS=,
+    for module in $MODULES; do
+        [ -n "$module" ] || continue
+        case "$module" in
+            virtio_pci|virtio_mmio|virtio_console) continue ;;
+        esac
+        load_module "$module" || true
+    done
+    IFS=$old_ifs
+fi
+
+log_console "early boot setup finished"

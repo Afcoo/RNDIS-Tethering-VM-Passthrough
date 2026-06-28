@@ -1,0 +1,594 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8B0000000000000000000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000101 /* App.swift */; };
+		8B0000000000000000000002 /* AppSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000102 /* AppSection.swift */; };
+		8B0000000000000000000003 /* USBAccessoryRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000103 /* USBAccessoryRecord.swift */; };
+		8B0000000000000000000004 /* VMRuntimeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000104 /* VMRuntimeState.swift */; };
+		8B0000000000000000000005 /* AccessoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000105 /* AccessoryMonitor.swift */; };
+		8B0000000000000000000006 /* VirtualMachineDelegateBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000106 /* VirtualMachineDelegateBox.swift */; };
+		8B0000000000000000000007 /* VMConfigurationFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000107 /* VMConfigurationFactory.swift */; };
+		8B0000000000000000000008 /* TetheringStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000108 /* TetheringStore.swift */; };
+		8B0000000000000000000009 /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000109 /* Clipboard.swift */; };
+		8B000000000000000000000A /* FilePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010A /* FilePicker.swift */; };
+		8B000000000000000000000B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010B /* ContentView.swift */; };
+		8B000000000000000000000C /* VMSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010C /* VMSetupView.swift */; };
+		8B000000000000000000000D /* USBDevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010D /* USBDevicesView.swift */; };
+		8B000000000000000000000E /* ConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010E /* ConsoleView.swift */; };
+		8B000000000000000000000F /* WireguardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B000000000000000000010F /* WireguardView.swift */; };
+		8B0000000000000000000011 /* SharedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000111 /* SharedViews.swift */; };
+		8B0000000000000000000012 /* RuntimeEntitlements.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0000000000000000000112 /* RuntimeEntitlements.swift */; };
+		8E0000000000000000000001 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 8E0000000000000000000102 /* SwiftTerm */; };
+		8F0000000000000000000001 /* WireGuardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0000000000000000000101 /* WireGuardSettings.swift */; };
+		8F0000000000000000000002 /* WireGuardConfigurationLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0000000000000000000102 /* WireGuardConfigurationLoader.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		374FD25724CBADD100890848 /* RTVMP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RTVMP.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		374FD26124CBAE6700890848 /* LinuxVirtualMachine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LinuxVirtualMachine.entitlements; sourceTree = "<group>"; };
+		374FD26224CBAE6700890848 /* Runtime.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runtime.entitlements; sourceTree = "<group>"; };
+		3B6662F3321F8749BDBDDB08 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		415EB883448D759F3C023B32 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		8B0000000000000000000101 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		8B0000000000000000000102 /* AppSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSection.swift; sourceTree = "<group>"; };
+		8B0000000000000000000103 /* USBAccessoryRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBAccessoryRecord.swift; sourceTree = "<group>"; };
+		8B0000000000000000000104 /* VMRuntimeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMRuntimeState.swift; sourceTree = "<group>"; };
+		8B0000000000000000000105 /* AccessoryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessoryMonitor.swift; sourceTree = "<group>"; };
+		8B0000000000000000000106 /* VirtualMachineDelegateBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualMachineDelegateBox.swift; sourceTree = "<group>"; };
+		8B0000000000000000000107 /* VMConfigurationFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMConfigurationFactory.swift; sourceTree = "<group>"; };
+		8B0000000000000000000108 /* TetheringStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetheringStore.swift; sourceTree = "<group>"; };
+		8B0000000000000000000109 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
+		8B000000000000000000010A /* FilePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePicker.swift; sourceTree = "<group>"; };
+		8B000000000000000000010B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		8B000000000000000000010C /* VMSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VMSetupView.swift; sourceTree = "<group>"; };
+		8B000000000000000000010D /* USBDevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBDevicesView.swift; sourceTree = "<group>"; };
+		8B000000000000000000010E /* ConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleView.swift; sourceTree = "<group>"; };
+		8B000000000000000000010F /* WireguardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireguardView.swift; sourceTree = "<group>"; };
+		8B0000000000000000000111 /* SharedViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViews.swift; sourceTree = "<group>"; };
+		8B0000000000000000000112 /* RuntimeEntitlements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeEntitlements.swift; sourceTree = "<group>"; };
+		8B0000000000000000000113 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8F0000000000000000000101 /* WireGuardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardSettings.swift; sourceTree = "<group>"; };
+		8F0000000000000000000102 /* WireGuardConfigurationLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardConfigurationLoader.swift; sourceTree = "<group>"; };
+		E3865CF619CB3E4197A4D3AA /* LocalSigning.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = LocalSigning.xcconfig.example; path = Configuration/LocalSigning.xcconfig.example; sourceTree = "<group>"; };
+		E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = BuildSettings.xcconfig; path = Configuration/BuildSettings.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		374FD25424CBADD100890848 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E0000000000000000000001 /* SwiftTerm in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		374FD24E24CBADD100890848 = {
+			isa = PBXGroup;
+			children = (
+				415EB883448D759F3C023B32 /* README.md */,
+				374FD25924CBADD100890848 /* LinuxVirtualMachine */,
+				8C0000000000000000000202 /* Frameworks */,
+				374FD25824CBADD100890848 /* Products */,
+				7311A096A816DCB7003B6B98 /* Configuration */,
+				84CE507934101D4167798E3C /* LICENSE */,
+			);
+			sourceTree = "<group>";
+		};
+		374FD25824CBADD100890848 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				374FD25724CBADD100890848 /* RTVMP.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		374FD25924CBADD100890848 /* LinuxVirtualMachine */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000201 /* App */,
+				8B0000000000000000000202 /* Models */,
+				8B0000000000000000000203 /* Services */,
+				8B0000000000000000000204 /* Stores */,
+				8B0000000000000000000205 /* Support */,
+				8B0000000000000000000206 /* Views */,
+				8B0000000000000000000113 /* Info.plist */,
+				374FD26124CBAE6700890848 /* LinuxVirtualMachine.entitlements */,
+				374FD26224CBAE6700890848 /* Runtime.entitlements */,
+			);
+			path = LinuxVirtualMachine;
+			sourceTree = "<group>";
+		};
+		7311A096A816DCB7003B6B98 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */,
+				E3865CF619CB3E4197A4D3AA /* LocalSigning.xcconfig.example */,
+			);
+			name = Configuration;
+			sourceTree = "<group>";
+		};
+		84CE507934101D4167798E3C /* LICENSE */ = {
+			isa = PBXGroup;
+			children = (
+				3B6662F3321F8749BDBDDB08 /* LICENSE.txt */,
+			);
+			name = LICENSE;
+			path = .;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000201 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000101 /* App.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000202 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000102 /* AppSection.swift */,
+				8B0000000000000000000103 /* USBAccessoryRecord.swift */,
+				8B0000000000000000000104 /* VMRuntimeState.swift */,
+				8F0000000000000000000101 /* WireGuardSettings.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000203 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000105 /* AccessoryMonitor.swift */,
+				8B0000000000000000000106 /* VirtualMachineDelegateBox.swift */,
+				8B0000000000000000000107 /* VMConfigurationFactory.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000204 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000108 /* TetheringStore.swift */,
+				8F0000000000000000000102 /* WireGuardConfigurationLoader.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000205 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				8B0000000000000000000109 /* Clipboard.swift */,
+				8B000000000000000000010A /* FilePicker.swift */,
+				8B0000000000000000000112 /* RuntimeEntitlements.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		8B0000000000000000000206 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				8B000000000000000000010B /* ContentView.swift */,
+				8B000000000000000000010C /* VMSetupView.swift */,
+				8B000000000000000000010D /* USBDevicesView.swift */,
+				8B000000000000000000010E /* ConsoleView.swift */,
+				8B000000000000000000010F /* WireguardView.swift */,
+				8B0000000000000000000111 /* SharedViews.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		8C0000000000000000000202 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		374FD25624CBADD100890848 /* LinuxVirtualMachine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "LinuxVirtualMachine" */;
+			buildPhases = (
+				374FD25324CBADD100890848 /* Sources */,
+				374FD25424CBADD100890848 /* Frameworks */,
+				8D0000000000000000000301 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LinuxVirtualMachine;
+			packageProductDependencies = (
+				8E0000000000000000000102 /* SwiftTerm */,
+			);
+			productName = RTVMP;
+			productReference = 374FD25724CBADD100890848 /* RTVMP.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		374FD24F24CBADD100890848 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1200;
+				LastUpgradeCheck = 1200;
+				ORGANIZATIONNAME = Afcoo;
+				TargetAttributes = {
+					374FD25624CBADD100890848 = {
+						CreatedOnToolsVersion = 12.0;
+					};
+				};
+			};
+			buildConfigurationList = 374FD25224CBADD100890848 /* Build configuration list for PBXProject "RNDIS Tethering VM Passthrough" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 374FD24E24CBADD100890848;
+			packageReferences = (
+				8E0000000000000000000101 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+			);
+			productRefGroup = 374FD25824CBADD100890848 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				374FD25624CBADD100890848 /* LinuxVirtualMachine */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D0000000000000000000301 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		374FD25324CBADD100890848 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B0000000000000000000001 /* App.swift in Sources */,
+				8B0000000000000000000002 /* AppSection.swift in Sources */,
+				8B0000000000000000000003 /* USBAccessoryRecord.swift in Sources */,
+				8B0000000000000000000004 /* VMRuntimeState.swift in Sources */,
+				8B0000000000000000000005 /* AccessoryMonitor.swift in Sources */,
+				8B0000000000000000000006 /* VirtualMachineDelegateBox.swift in Sources */,
+				8B0000000000000000000007 /* VMConfigurationFactory.swift in Sources */,
+				8B0000000000000000000008 /* TetheringStore.swift in Sources */,
+				8B0000000000000000000009 /* Clipboard.swift in Sources */,
+				8B000000000000000000000A /* FilePicker.swift in Sources */,
+				8B0000000000000000000012 /* RuntimeEntitlements.swift in Sources */,
+				8F0000000000000000000001 /* WireGuardSettings.swift in Sources */,
+				8F0000000000000000000002 /* WireGuardConfigurationLoader.swift in Sources */,
+				8B000000000000000000000B /* ContentView.swift in Sources */,
+				8B000000000000000000000C /* VMSetupView.swift in Sources */,
+				8B000000000000000000000D /* USBDevicesView.swift in Sources */,
+				8B000000000000000000000E /* ConsoleView.swift in Sources */,
+				8B000000000000000000000F /* WireguardView.swift in Sources */,
+				8B0000000000000000000011 /* SharedViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		374FD25C24CBADD100890848 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		374FD25D24CBADD100890848 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		374FD25F24CBADD100890848 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/LinuxVirtualMachine.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.0.1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RTPVM_APP_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = RTVMP;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		374FD26024CBADD100890848 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/LinuxVirtualMachine.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.0.1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RTPVM_APP_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = RTVMP;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		8B0000000000000000000301 /* RuntimeDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = RuntimeDebug;
+		};
+		8B0000000000000000000302 /* RuntimeDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/Runtime.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0.0.1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(RTPVM_APP_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = RTVMP;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = RuntimeDebug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		374FD25224CBADD100890848 /* Build configuration list for PBXProject "RNDIS Tethering VM Passthrough" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				374FD25C24CBADD100890848 /* Debug */,
+				374FD25D24CBADD100890848 /* Release */,
+				8B0000000000000000000301 /* RuntimeDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "LinuxVirtualMachine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				374FD25F24CBADD100890848 /* Debug */,
+				374FD26024CBADD100890848 /* Release */,
+				8B0000000000000000000302 /* RuntimeDebug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8E0000000000000000000101 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm.git";
+			requirement = {
+				kind = revision;
+				revision = b1262db5b6bea699a8260a8c66999436c508ca56;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8E0000000000000000000102 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E0000000000000000000101 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 374FD24F24CBADD100890848 /* Project object */;
+}

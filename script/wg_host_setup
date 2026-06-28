@@ -1,0 +1,447 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ASSET_DIR=${RTPVM_ASSET_DIR:-"$SCRIPT_DIR/assets"}
+DEFAULT_SOURCE_CONFIG="$ASSET_DIR/wireguard/wg-client.conf"
+CACHE_SOURCE_CONFIG="$ASSET_DIR/.cache/wireguard/wg-client.conf"
+LEGACY_SOURCE_CONFIG="$ASSET_DIR/wg-client.conf"
+if [ -n "${RTPVM_CLIENT_CONF:-}" ]; then
+    SOURCE_CONFIG=$RTPVM_CLIENT_CONF
+elif [ -f "$DEFAULT_SOURCE_CONFIG" ]; then
+    SOURCE_CONFIG=$DEFAULT_SOURCE_CONFIG
+elif [ -f "$CACHE_SOURCE_CONFIG" ]; then
+    SOURCE_CONFIG=$CACHE_SOURCE_CONFIG
+elif [ -f "$LEGACY_SOURCE_CONFIG" ]; then
+    SOURCE_CONFIG=$LEGACY_SOURCE_CONFIG
+else
+    SOURCE_CONFIG=$DEFAULT_SOURCE_CONFIG
+fi
+RUNTIME_DIR=${RTPVM_WG_RUNTIME_DIR:-"${HOME:?HOME is not set}/.rtpvm"}
+WG_IF=""
+RUNTIME_CONFIG=""
+PLACEHOLDER="<RTPVM_WG_ENDPOINT>"
+WG_ENDPOINT_PORT=${RTPVM_WG_ENDPOINT_PORT:-51820}
+
+usage() {
+    cat <<EOF
+usage:
+  $0 up [wgX]
+  $0 down [wgX]
+  $0 restart [wgX]
+  $0 status [wgX]
+  $0 print [wgX]
+
+Configures a host WireGuard client connection from $SOURCE_CONFIG.
+
+Actions:
+  up       writes $RUNTIME_DIR/<wgX>.conf and runs wg-quick up
+  down     runs wg-quick down for $RUNTIME_DIR/<wgX>.conf
+  restart  rewrites or reuses the runtime config, then restarts the connection
+  status   prints wg status for the interface
+  print    writes or reuses the runtime config, then prints it
+
+The generated RTPVM client config is an IPv4 full-tunnel profile, so host IPv4
+internet traffic uses the VM RNDIS upstream while the tunnel is active.
+
+Interactive prompts:
+  interface name:      defaults to wg0 when left blank
+  existing config:     asks whether to use $RUNTIME_DIR/<wgX>.conf if present
+  endpoint IP address: guest NAT IPv4 address
+  endpoint port:       defaults to $WG_ENDPOINT_PORT when left blank
+
+Environment overrides:
+  RTPVM_WG_ENDPOINT=192.168.64.2
+  RTPVM_WG_ENDPOINT_PORT=$WG_ENDPOINT_PORT
+  RTPVM_WG_INTERFACE=wg0
+  RTPVM_USE_EXISTING_CONFIG=y
+  RTPVM_WG_RUNTIME_DIR=$RUNTIME_DIR
+EOF
+}
+
+missing_wireguard_tools() {
+    cat >&2 <<EOF
+Missing WireGuard command: $1
+
+Install WireGuard tools first:
+  brew install wireguard-tools
+
+For macOS RTPVM validation, wireguard-go is also recommended:
+  brew install wireguard-go
+EOF
+    exit 1
+}
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || missing_wireguard_tools "$1"
+}
+
+require_tty_input() {
+    if [ ! -t 0 ]; then
+        cat >&2 <<EOF
+Interactive input is required.
+
+Run this script from a terminal, or set:
+  RTPVM_WG_ENDPOINT=192.168.64.2
+  RTPVM_WG_ENDPOINT_PORT=$WG_ENDPOINT_PORT
+  RTPVM_WG_INTERFACE=wg0
+EOF
+        exit 1
+    fi
+}
+
+prompt() {
+    label=$1
+    default_value=${2:-}
+    value=""
+
+    require_tty_input
+    if [ -n "$default_value" ]; then
+        printf '%s [%s]: ' "$label" "$default_value" >&2
+    else
+        printf '%s: ' "$label" >&2
+    fi
+
+    IFS= read -r value
+    if [ -z "$value" ]; then
+        value=$default_value
+    fi
+
+    printf '%s' "$value"
+}
+
+prompt_yes_no() {
+    label=$1
+    value=""
+
+    while true; do
+        value=$(prompt "$label (y/n)")
+        case "$value" in
+            y|Y|yes|YES)
+                return 0
+                ;;
+            n|N|no|NO)
+                return 1
+                ;;
+            *)
+                echo "Enter y or n." >&2
+                ;;
+        esac
+    done
+}
+
+normalize_endpoint() {
+    endpoint_host=$1
+    endpoint_port=$2
+
+    printf '%s:%s' "$endpoint_host" "$endpoint_port"
+}
+
+split_endpoint_host() {
+    endpoint=$1
+
+    case "$endpoint" in
+        *:*)
+            printf '%s' "${endpoint%%:*}"
+            ;;
+        *)
+            printf '%s' "$endpoint"
+            ;;
+    esac
+}
+
+split_endpoint_port() {
+    endpoint=$1
+
+    case "$endpoint" in
+        *:*)
+            printf '%s' "${endpoint##*:}"
+            ;;
+        *)
+            printf '%s' "$WG_ENDPOINT_PORT"
+            ;;
+    esac
+}
+
+validate_port() {
+    port=$1
+
+    case "$port" in
+        ''|*[!0-9]*)
+            echo "WireGuard endpoint port must be numeric: $port" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        echo "WireGuard endpoint port must be between 1 and 65535: $port" >&2
+        exit 1
+    fi
+}
+
+resolve_endpoint() {
+    endpoint_value=${1:-${RTPVM_WG_ENDPOINT:-}}
+    endpoint_host=""
+    endpoint_port=""
+    prompted_endpoint=0
+
+    if [ -n "$endpoint_value" ]; then
+        endpoint_host=$(split_endpoint_host "$endpoint_value")
+        endpoint_port=$(split_endpoint_port "$endpoint_value")
+    fi
+
+    while [ -z "$endpoint_host" ]; do
+        endpoint_host=$(prompt "Guest NAT endpoint IP address")
+        prompted_endpoint=1
+    done
+
+    if [ -z "$endpoint_port" ]; then
+        endpoint_port=${RTPVM_WG_ENDPOINT_PORT:-}
+    fi
+
+    if [ -z "$endpoint_port" ]; then
+        if [ "$prompted_endpoint" -eq 1 ]; then
+            endpoint_port=$(prompt "WireGuard endpoint port" "$WG_ENDPOINT_PORT")
+        else
+            endpoint_port=$WG_ENDPOINT_PORT
+        fi
+    fi
+
+    validate_port "$endpoint_port"
+    normalize_endpoint "$endpoint_host" "$endpoint_port"
+}
+
+resolve_interface() {
+    value=${1:-${RTPVM_WG_INTERFACE:-}}
+
+    if [ -z "$value" ]; then
+        value=$(prompt "WireGuard interface name" "wg0")
+    fi
+
+    case "$value" in
+        wg*)
+            ;;
+        *)
+            echo "WireGuard interface name should start with wg: $value" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ ${#value} -gt 15 ]; then
+        echo "WireGuard interface name is too long for a network interface: $value" >&2
+        exit 1
+    fi
+
+    WG_IF=$value
+    RUNTIME_CONFIG=${RTPVM_RUNTIME_CONFIG:-"$RUNTIME_DIR/$WG_IF.conf"}
+}
+
+run_as_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+        return
+    fi
+
+    if ! command -v sudo >/dev/null 2>&1; then
+        echo "This action needs root privileges, but sudo was not found." >&2
+        exit 1
+    fi
+
+    sudo "$@"
+}
+
+run_as_root_capture() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+        return
+    fi
+
+    if ! command -v sudo >/dev/null 2>&1; then
+        echo "This action needs root privileges, but sudo was not found." >&2
+        exit 1
+    fi
+
+    sudo "$@"
+}
+
+real_wireguard_interface() {
+    name_file="/var/run/wireguard/$WG_IF.name"
+    if [ -f "$name_file" ]; then
+        mapped_name=$(run_as_root_capture cat "$name_file" 2>/dev/null || true)
+        if [ -n "$mapped_name" ]; then
+            printf '%s' "$mapped_name"
+            return 0
+        fi
+    fi
+
+    printf '%s' "$WG_IF"
+}
+
+prepare_runtime_config() {
+    action=$1
+    endpoint=${2:-}
+
+    if [ ! -f "$SOURCE_CONFIG" ]; then
+        cat >&2 <<EOF
+Missing WireGuard client config:
+  $SOURCE_CONFIG
+
+Generate assets first:
+  ./script/make_vm_assets
+EOF
+        exit 1
+    fi
+
+    mkdir -p "$RUNTIME_DIR"
+    umask 077
+
+    if [ -n "$endpoint" ]; then
+        awk -v endpoint="$endpoint" -v placeholder="$PLACEHOLDER" '
+            /^[[:space:]]*Endpoint[[:space:]]*=/ {
+                print "Endpoint = " endpoint
+                next
+            }
+            {
+                gsub(placeholder, endpoint)
+                print
+            }
+        ' "$SOURCE_CONFIG" >"$RUNTIME_CONFIG"
+    elif grep -q "$PLACEHOLDER" "$SOURCE_CONFIG"; then
+        if [ "$action" = "up" ] || [ "$action" = "restart" ] || [ "$action" = "print" ]; then
+            cat >&2 <<EOF
+$SOURCE_CONFIG still contains Endpoint = $PLACEHOLDER.
+
+Print RTPVM_WG_ENDPOINT=<guest-nat-ip>:$WG_ENDPOINT_PORT from the guest console,
+then enter the endpoint IP address and port when prompted.
+
+For non-interactive use:
+  RTPVM_WG_ENDPOINT=192.168.64.2 RTPVM_WG_ENDPOINT_PORT=$WG_ENDPOINT_PORT $0 up
+EOF
+            exit 1
+        fi
+
+        cp "$SOURCE_CONFIG" "$RUNTIME_CONFIG"
+    else
+        cp "$SOURCE_CONFIG" "$RUNTIME_CONFIG"
+    fi
+
+    chmod 0600 "$RUNTIME_CONFIG"
+}
+
+require_runtime_config() {
+    if [ -f "$RUNTIME_CONFIG" ]; then
+        return
+    fi
+
+    cat >&2 <<EOF
+Runtime WireGuard config not found:
+  $RUNTIME_CONFIG
+
+Run '$0 up' first, or set RTPVM_WG_RUNTIME_DIR to the directory that contains
+the runtime $WG_IF.conf file.
+EOF
+    exit 1
+}
+
+should_use_existing_runtime_config() {
+    if [ ! -f "$RUNTIME_CONFIG" ]; then
+        return 1
+    fi
+
+    case "${RTPVM_USE_EXISTING_CONFIG:-}" in
+        y|Y|yes|YES|true|TRUE|1)
+            return 0
+            ;;
+        n|N|no|NO|false|FALSE|0)
+            return 1
+            ;;
+        "")
+            ;;
+        *)
+            echo "RTPVM_USE_EXISTING_CONFIG must be y or n." >&2
+            exit 1
+            ;;
+    esac
+
+    prompt_yes_no "Existing config found at $RUNTIME_CONFIG. Use it?"
+}
+
+warn_full_tunnel() {
+    if grep -Eq '^[[:space:]]*AllowedIPs[[:space:]]*=.*(0\.0\.0\.0/0|::/0|0\.0\.0\.0/1.*128\.0\.0\.0/1|128\.0\.0\.0/1.*0\.0\.0\.0/1)' "$RUNTIME_CONFIG"; then
+        echo "warning: $RUNTIME_CONFIG is a full-tunnel config and may replace default routes while active." >&2
+        echo "         Stop it with '$0 down $WG_IF' to restore normal host routing." >&2
+    fi
+}
+
+ACTION=${1:-}
+case "$ACTION" in
+    "")
+        usage >&2
+        exit 2
+        ;;
+    -h|--help|help)
+        usage
+        exit 0
+        ;;
+esac
+
+INTERFACE_ARG=${2:-}
+ENDPOINT=""
+
+case "$ACTION" in
+    up)
+        require_command wg-quick
+        resolve_interface "$INTERFACE_ARG"
+        if should_use_existing_runtime_config; then
+            echo "Using existing $RUNTIME_CONFIG"
+        else
+            ENDPOINT=$(resolve_endpoint)
+            prepare_runtime_config "$ACTION" "$ENDPOINT"
+        fi
+        warn_full_tunnel
+        echo "Starting $WG_IF with $RUNTIME_CONFIG"
+        run_as_root wg-quick up "$RUNTIME_CONFIG"
+        ;;
+    down)
+        require_command wg-quick
+        resolve_interface "$INTERFACE_ARG"
+        require_runtime_config
+        echo "Stopping $WG_IF with $RUNTIME_CONFIG"
+        run_as_root wg-quick down "$RUNTIME_CONFIG"
+        ;;
+    restart)
+        require_command wg-quick
+        resolve_interface "$INTERFACE_ARG"
+        if should_use_existing_runtime_config; then
+            echo "Using existing $RUNTIME_CONFIG"
+        else
+            ENDPOINT=$(resolve_endpoint)
+            prepare_runtime_config "$ACTION" "$ENDPOINT"
+        fi
+        warn_full_tunnel
+        echo "Restarting $WG_IF with $RUNTIME_CONFIG"
+        run_as_root wg-quick down "$RUNTIME_CONFIG" >/dev/null 2>&1 || true
+        run_as_root wg-quick up "$RUNTIME_CONFIG"
+        ;;
+    status)
+        require_command wg
+        resolve_interface "$INTERFACE_ARG"
+        REAL_IF=$(real_wireguard_interface)
+        if [ "$REAL_IF" != "$WG_IF" ]; then
+            echo "$WG_IF is running as $REAL_IF"
+        fi
+        run_as_root wg show "$REAL_IF"
+        ;;
+    print)
+        resolve_interface "$INTERFACE_ARG"
+        if ! should_use_existing_runtime_config; then
+            ENDPOINT=$(resolve_endpoint)
+            prepare_runtime_config "$ACTION" "$ENDPOINT"
+        fi
+        cat "$RUNTIME_CONFIG"
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac

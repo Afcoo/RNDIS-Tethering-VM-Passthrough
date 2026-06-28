@@ -1,0 +1,42 @@
+#!/bin/sh
+
+BB=/usr/bin/busybox
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+export PATH
+CONSOLE_ROWS=${RTPVM_CONSOLE_ROWS:-40}
+CONSOLE_COLUMNS=${RTPVM_CONSOLE_COLUMNS:-120}
+HOME=/root
+TERM=${TERM:-xterm-256color}
+export HOME TERM
+
+ensure_hvc_console_node() {
+    [ -c /dev/hvc0 ] && return 0
+
+    hvc_major=$($BB awk '$2 == "hvc" { print $1 }' /proc/devices 2>/dev/null || true)
+    if [ -n "$hvc_major" ]; then
+        $BB mknod /dev/hvc0 c "$hvc_major" 0 2>/dev/null || true
+    fi
+}
+
+ensure_hvc_console_node
+CONSOLE_DEVICE=/dev/hvc0
+[ -c "$CONSOLE_DEVICE" ] || CONSOLE_DEVICE=/dev/console
+
+if [ -c "$CONSOLE_DEVICE" ]; then
+    $BB stty rows "$CONSOLE_ROWS" columns "$CONSOLE_COLUMNS" <"$CONSOLE_DEVICE" 2>/dev/null || true
+fi
+
+export LINES="$CONSOLE_ROWS"
+export COLUMNS="$CONSOLE_COLUMNS"
+
+{
+    echo
+    [ -f /etc/motd ] && $BB cat /etc/motd
+    echo
+    echo "Kernel command line:"
+    $BB cat /proc/cmdline
+    echo
+    echo "Starting shell on $CONSOLE_DEVICE. Exit restarts the shell."
+} >"$CONSOLE_DEVICE" 2>&1
+
+exec /usr/bin/sh -l <"$CONSOLE_DEVICE" >"$CONSOLE_DEVICE" 2>&1

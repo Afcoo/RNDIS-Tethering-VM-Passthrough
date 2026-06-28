@@ -1,0 +1,7 @@
+//
+// Copy this file to LocalSigning.xcconfig and fill in local signing values for
+// runtime USB passthrough and virtualization validation.
+//
+
+DEVELOPMENT_TEAM = YOURTEAMID
+RTPVM_APP_BUNDLE_IDENTIFIER = com.example.rndis-tethering.local

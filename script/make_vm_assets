@@ -1,0 +1,680 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+
+ALPINE_VERSION=${ALPINE_VERSION:-3.24.1}
+ALPINE_BRANCH=${ALPINE_BRANCH:-v3.24}
+ALPINE_ARCH=${ALPINE_ARCH:-aarch64}
+ALPINE_FLAVOR=${ALPINE_FLAVOR:-standard}
+ALPINE_MIRROR=${ALPINE_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}
+
+ASSET_ROOT=${ASSET_ROOT:-"$SCRIPT_DIR/assets"}
+ASSET_NAME="alpine-${ALPINE_FLAVOR}-${ALPINE_VERSION}-${ALPINE_ARCH}"
+ASSET_DIR=${ASSET_DIR:-"$ASSET_ROOT"}
+CACHE_DIR=${CACHE_DIR:-"$ASSET_ROOT/.cache"}
+ISO_EXTRACT_DIR=${ISO_EXTRACT_DIR:-"$CACHE_DIR/$ASSET_NAME"}
+ISO_NAME="$ASSET_NAME.iso"
+ISO_URL="$ALPINE_MIRROR/$ALPINE_BRANCH/releases/$ALPINE_ARCH/$ISO_NAME"
+SHA256_URL="$ISO_URL.sha256"
+APK_REPOSITORY="$ALPINE_MIRROR/$ALPINE_BRANCH/main/$ALPINE_ARCH"
+APKINDEX_NAME="APKINDEX-$ALPINE_BRANCH-main-$ALPINE_ARCH.tar.gz"
+APKINDEX_ARCHIVE="$CACHE_DIR/$APKINDEX_NAME"
+APKINDEX_FILE="$CACHE_DIR/APKINDEX-$ALPINE_BRANCH-main-$ALPINE_ARCH"
+GUEST_PACKAGES="iproute2 nftables wireguard-tools-wg-quick tcpdump"
+
+WG_SERVER_ADDRESS=${WG_SERVER_ADDRESS:-"10.100.0.1/24"}
+WG_CLIENT_ADDRESS=${WG_CLIENT_ADDRESS:-"10.100.0.2/24"}
+WG_CLIENT_ALLOWED_IP=${WG_CLIENT_ALLOWED_IP:-"10.100.0.2/32"}
+WG_ALLOWED_IPS=${WG_ALLOWED_IPS:-"10.100.0.0/24, 0.0.0.0/1, 128.0.0.0/1"}
+WG_ROUTE_SOURCE=${WG_ROUTE_SOURCE:-"10.100.0.0/24"}
+WG_LISTEN_PORT=${WG_LISTEN_PORT:-51820}
+WG_MTU=${WG_MTU:-1420}
+WG_PERSISTENT_KEEPALIVE=${WG_PERSISTENT_KEEPALIVE:-25}
+WG_ENDPOINT_PLACEHOLDER=${WG_ENDPOINT_PLACEHOLDER:-"<RTPVM_WG_ENDPOINT>"}
+WG_CONFIG_DIR=${WG_CONFIG_DIR:-"$ASSET_DIR/wireguard"}
+WG_SERVER_CONFIG=${WG_SERVER_CONFIG:-"$WG_CONFIG_DIR/wg-server.conf"}
+WG_CLIENT_CONFIG=${WG_CLIENT_CONFIG:-"$WG_CONFIG_DIR/wg-client.conf"}
+WG_BIN=${WG_BIN:-}
+
+mkdir -p "$ASSET_ROOT" "$ASSET_DIR" "$CACHE_DIR" "$ISO_EXTRACT_DIR" "$WG_CONFIG_DIR"
+mkdir -p "$(dirname -- "$WG_SERVER_CONFIG")" "$(dirname -- "$WG_CLIENT_CONFIG")"
+
+resolve_wireguard_binary() {
+    if [ -n "$WG_BIN" ]; then
+        if [ -x "$WG_BIN" ]; then
+            return
+        fi
+
+        echo "WG_BIN is set but is not executable: $WG_BIN" >&2
+        exit 1
+    fi
+
+    WG_BIN=$(command -v wg 2>/dev/null || true)
+    if [ -z "$WG_BIN" ]; then
+        echo "Missing WireGuard CLI 'wg'." >&2
+        echo "Install it with: brew install wireguard-tools" >&2
+        echo "Or set WG_BIN=/path/to/wg before running this script." >&2
+        exit 1
+    fi
+}
+
+generate_wireguard_keys() {
+    resolve_wireguard_binary
+
+    WG_SERVER_PRIVATE_KEY=$("$WG_BIN" genkey)
+    WG_SERVER_PUBLIC_KEY=$(printf '%s\n' "$WG_SERVER_PRIVATE_KEY" | "$WG_BIN" pubkey)
+    WG_CLIENT_PRIVATE_KEY=$("$WG_BIN" genkey)
+    WG_CLIENT_PUBLIC_KEY=$(printf '%s\n' "$WG_CLIENT_PRIVATE_KEY" | "$WG_BIN" pubkey)
+}
+
+write_wireguard_configs() {
+    cat >"$WG_SERVER_CONFIG" <<EOF
+[Interface]
+PrivateKey = $WG_SERVER_PRIVATE_KEY
+Address = $WG_SERVER_ADDRESS
+ListenPort = $WG_LISTEN_PORT
+MTU = $WG_MTU
+
+[Peer]
+PublicKey = $WG_CLIENT_PUBLIC_KEY
+AllowedIPs = $WG_CLIENT_ALLOWED_IP
+PersistentKeepalive = $WG_PERSISTENT_KEEPALIVE
+EOF
+    chmod 0600 "$WG_SERVER_CONFIG"
+
+    cat >"$WG_CLIENT_CONFIG" <<EOF
+[Interface]
+PrivateKey = $WG_CLIENT_PRIVATE_KEY
+Address = $WG_CLIENT_ADDRESS
+MTU = $WG_MTU
+
+[Peer]
+PublicKey = $WG_SERVER_PUBLIC_KEY
+AllowedIPs = $WG_ALLOWED_IPS
+Endpoint = $WG_ENDPOINT_PLACEHOLDER
+PersistentKeepalive = $WG_PERSISTENT_KEEPALIVE
+EOF
+    chmod 0600 "$WG_CLIENT_CONFIG"
+}
+
+INITRAMFS_SCRIPT_DIR="$SCRIPT_DIR/initramfs"
+
+require_initramfs_script() {
+    initramfs_script_source=$1
+    if [ ! -f "$initramfs_script_source" ]; then
+        echo "Missing initramfs script: $initramfs_script_source" >&2
+        exit 1
+    fi
+}
+
+install_initramfs_script() {
+    initramfs_script_source=$1
+    initramfs_script_destination=$2
+
+    require_initramfs_script "$initramfs_script_source"
+    cp "$initramfs_script_source" "$initramfs_script_destination"
+    chmod 0755 "$initramfs_script_destination"
+}
+
+install_init_network_script() {
+    init_network_source="$INITRAMFS_SCRIPT_DIR/init-network"
+    init_network_destination=$1
+
+    require_initramfs_script "$init_network_source"
+    python3 - "$init_network_source" "$init_network_destination" "$WG_LISTEN_PORT" "$WG_ROUTE_SOURCE" <<'PY_RENDER'
+from pathlib import Path
+import sys
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+listen_port = sys.argv[3]
+route_source = sys.argv[4]
+
+
+def shell_single_quote_content(value):
+    return value.replace("'", "'\"'\"'")
+
+text = source.read_text()
+text = text.replace("@WG_LISTEN_PORT@", shell_single_quote_content(listen_port))
+text = text.replace("@WG_ROUTE_SOURCE@", shell_single_quote_content(route_source))
+destination.write_text(text)
+PY_RENDER
+    chmod 0755 "$init_network_destination"
+}
+
+write_rtpvm_inittab() {
+    destination=$1
+    cat >"$destination" <<'RTPVM_INITTAB'
+::sysinit:/etc/init.d/rcS
+::once:/usr/local/sbin/init-network
+hvc0::respawn:/usr/local/sbin/init-console
+::restart:/sbin/init
+::ctrlaltdel:/bin/umount -a -r
+RTPVM_INITTAB
+    chmod 0644 "$destination"
+}
+
+write_initramfs_archive() {
+    source_dir=$1
+    destination=$2
+
+    python3 - "$source_dir" <<'PY' | gzip -9 >"$destination"
+import os
+import stat
+import sys
+
+root = os.path.abspath(sys.argv[1])
+out = sys.stdout.buffer
+inode = 1
+
+
+def align4(size):
+    return (4 - (size % 4)) % 4
+
+
+def write_padding(size):
+    padding = align4(size)
+    if padding:
+        out.write(b"\0" * padding)
+
+
+def write_header(name, mode, size, mtime=0, nlink=1, rdevmajor=0, rdevminor=0):
+    global inode
+    name_bytes = name.encode()
+    fields = [
+        inode,
+        mode,
+        0,
+        0,
+        nlink,
+        int(mtime),
+        size,
+        0,
+        0,
+        rdevmajor,
+        rdevminor,
+        len(name_bytes) + 1,
+        0,
+    ]
+    inode += 1
+    out.write(("070701" + "".join(f"{field:08x}" for field in fields)).encode())
+    out.write(name_bytes + b"\0")
+    write_padding(110 + len(name_bytes) + 1)
+
+
+def write_regular(name, path, st):
+    size = st.st_size
+    write_header(name, st.st_mode, size, st.st_mtime)
+    with open(path, "rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            out.write(chunk)
+    write_padding(size)
+
+
+def write_entry(name, path):
+    st = os.lstat(path)
+    if name == ".":
+        write_header(name, stat.S_IFDIR | 0o755, 0, st.st_mtime, nlink=2)
+    elif stat.S_ISDIR(st.st_mode):
+        write_header(name, st.st_mode, 0, st.st_mtime, nlink=2)
+    elif stat.S_ISLNK(st.st_mode):
+        target = os.readlink(path).encode()
+        write_header(name, stat.S_IFLNK | 0o777, len(target), st.st_mtime)
+        out.write(target)
+        write_padding(len(target))
+    elif stat.S_ISREG(st.st_mode):
+        write_regular(name, path, st)
+
+
+def write_char_device(name, major, minor, mode):
+    write_header(name, stat.S_IFCHR | mode, 0, 0, rdevmajor=major, rdevminor=minor)
+
+
+paths = ["."]
+for dirpath, dirnames, filenames in os.walk(root, topdown=True, followlinks=False):
+    dirnames.sort()
+    filenames.sort()
+    rel_dir = os.path.relpath(dirpath, root)
+    for entry in dirnames + filenames:
+        rel_path = entry if rel_dir == "." else os.path.join(rel_dir, entry)
+        paths.append(rel_path)
+
+seen = set()
+for rel_path in paths:
+    if rel_path in seen:
+        continue
+    seen.add(rel_path)
+    write_entry(rel_path, root if rel_path == "." else os.path.join(root, rel_path))
+
+devices = {
+    "dev/console": (5, 1, 0o600),
+    "dev/null": (1, 3, 0o666),
+    "dev/kmsg": (1, 11, 0o600),
+}
+for rel_path, (major, minor, mode) in devices.items():
+    if rel_path not in seen:
+        write_char_device(rel_path, major, minor, mode)
+
+write_header("TRAILER!!!", 0, 0)
+PY
+}
+
+generate_wireguard_keys
+write_wireguard_configs
+
+download() {
+    url=$1
+    dest=$2
+
+    if [ -f "$dest" ]; then
+        echo "Using cached $(basename "$dest")"
+        return
+    fi
+
+    echo "Downloading $url"
+    curl -fL -o "$dest" "$url"
+}
+
+download "$ISO_URL" "$CACHE_DIR/$ISO_NAME"
+download "$SHA256_URL" "$CACHE_DIR/$ISO_NAME.sha256"
+
+expected=$(awk '{ print $1 }' "$CACHE_DIR/$ISO_NAME.sha256")
+actual=$(shasum -a 256 "$CACHE_DIR/$ISO_NAME" | awk '{ print $1 }')
+if [ "$expected" != "$actual" ]; then
+    echo "SHA256 mismatch for $ISO_NAME" >&2
+    echo "expected: $expected" >&2
+    echo "actual:   $actual" >&2
+    exit 1
+fi
+
+iso_listing=$(tar -tf "$CACHE_DIR/$ISO_NAME")
+kernel_flavor=
+for flavor in lts virt; do
+    if printf '%s\n' "$iso_listing" | grep -qx "boot/vmlinuz-$flavor"; then
+        kernel_flavor=$flavor
+        break
+    fi
+done
+
+if [ -z "$kernel_flavor" ]; then
+    echo "No supported Alpine kernel found in $ISO_NAME" >&2
+    exit 1
+fi
+
+tar -xf "$CACHE_DIR/$ISO_NAME" -C "$ISO_EXTRACT_DIR" \
+    ".alpine-release" \
+    "boot/vmlinuz-$kernel_flavor" \
+    "boot/initramfs-$kernel_flavor" \
+    "boot/modloop-$kernel_flavor" \
+    "boot/grub/grub.cfg"
+
+python3 - "$ISO_EXTRACT_DIR/boot/vmlinuz-$kernel_flavor" "$ASSET_DIR/Image-$kernel_flavor" <<'PY'
+import pathlib
+import sys
+import zlib
+
+source = pathlib.Path(sys.argv[1])
+destination = pathlib.Path(sys.argv[2])
+data = source.read_bytes()
+offset = data.find(b"\x1f\x8b\x08")
+if offset < 0:
+    raise SystemExit(f"gzip payload not found in {source}")
+
+decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+image = decompressor.decompress(data[offset:]) + decompressor.flush()
+destination.write_bytes(image)
+PY
+
+base_initramfs="$ISO_EXTRACT_DIR/boot/initramfs-$kernel_flavor"
+rtpvm_initramfs="$ASSET_DIR/initramfs-rtpvm-$kernel_flavor"
+work_dir=$(mktemp -d "${TMPDIR:-/tmp}/alpine-rtpvm-initramfs.XXXXXX")
+trap 'rm -rf "$work_dir"' EXIT HUP INT TERM
+
+gzip -dc "$base_initramfs" | (cd "$work_dir" && cpio -idm >/dev/null 2>&1)
+
+kernel_release=$(find "$work_dir/lib/modules" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | head -n 1)
+if [ -z "$kernel_release" ]; then
+    echo "Could not determine kernel release from base initramfs modules." >&2
+    exit 1
+fi
+
+kernel_base=$(printf '%s\n' "$kernel_release" | sed "s/-[0-9][0-9]*-$kernel_flavor\$//")
+kernel_pkg_rev=$(printf '%s\n' "$kernel_release" | sed -n "s/^.*-\([0-9][0-9]*\)-$kernel_flavor\$/r\1/p")
+if [ -z "$kernel_base" ] || [ -z "$kernel_pkg_rev" ] || [ "$kernel_base" = "$kernel_release" ]; then
+    echo "Could not map kernel release $kernel_release to an Alpine linux-$kernel_flavor APK version." >&2
+    exit 1
+fi
+
+kernel_apk_name="linux-$kernel_flavor-$kernel_base-$kernel_pkg_rev.apk"
+kernel_apk="$CACHE_DIR/$kernel_apk_name"
+download "$APK_REPOSITORY/$kernel_apk_name" "$kernel_apk"
+
+module_stage="$work_dir/.linux-apk"
+module_base="lib/modules/$kernel_release"
+mkdir -p "$module_stage"
+tar -xf "$kernel_apk" -C "$module_stage" "$module_base"
+
+for required_metadata in modules.alias modules.dep modules.order
+do
+    if [ ! -f "$module_stage/$module_base/$required_metadata" ]; then
+        echo "Missing expected module metadata in $kernel_apk_name: $module_base/$required_metadata" >&2
+        exit 1
+    fi
+done
+
+module_seed_file="$work_dir/.rtpvm-module-seeds"
+cat >"$module_seed_file" <<'EOF'
+kernel/drivers/net/usb/usbnet.ko.gz
+kernel/drivers/net/usb/cdc_ether.ko.gz
+kernel/drivers/net/usb/cdc_subset.ko.gz
+kernel/drivers/net/usb/rndis_host.ko.gz
+kernel/drivers/net/wireguard/wireguard.ko.gz
+kernel/net/netfilter/nfnetlink.ko.gz
+kernel/net/netfilter/nf_tables.ko.gz
+kernel/net/netfilter/nf_conntrack.ko.gz
+kernel/net/netfilter/nf_nat.ko.gz
+kernel/net/netfilter/nft_chain_nat.ko.gz
+kernel/net/netfilter/nft_ct.ko.gz
+kernel/net/netfilter/nft_nat.ko.gz
+kernel/net/netfilter/nft_masq.ko.gz
+EOF
+
+module_copy_list="$work_dir/.rtpvm-module-copy-list"
+python3 - "$module_stage/$module_base/modules.dep" "$module_seed_file" >"$module_copy_list" <<'PY'
+import pathlib
+import sys
+
+modules_dep = pathlib.Path(sys.argv[1])
+seed_file = pathlib.Path(sys.argv[2])
+
+dependencies = {}
+for line in modules_dep.read_text().splitlines():
+    if ":" not in line:
+        continue
+    module, dep_text = line.split(":", 1)
+    dependencies[module] = dep_text.split()
+
+pending = [line.strip() for line in seed_file.read_text().splitlines() if line.strip()]
+seen = set()
+ordered = []
+
+while pending:
+    module = pending.pop(0)
+    if module in seen:
+        continue
+    if module not in dependencies:
+        raise SystemExit(f"Missing module metadata for {module}")
+    seen.add(module)
+    ordered.append(module)
+    pending.extend(dependencies[module])
+
+for module in ordered:
+    print(module)
+PY
+
+while IFS= read -r module_path
+do
+    required_module="$module_base/$module_path"
+    if [ ! -f "$module_stage/$required_module" ]; then
+        echo "Missing expected module in $kernel_apk_name: $required_module" >&2
+        exit 1
+    fi
+
+    mkdir -p "$work_dir/$(dirname "$required_module")"
+    cp "$module_stage/$required_module" "$work_dir/$required_module"
+    grep "^$module_path:" "$module_stage/$module_base/modules.dep" >>"$work_dir/$module_base/modules.dep"
+    grep "^$module_path$" "$module_stage/$module_base/modules.order" >>"$work_dir/$module_base/modules.order" || true
+done <"$module_copy_list"
+
+awk '$NF == "usbnet" || $NF == "cdc_ether" || $NF == "cdc_subset" || $NF == "rndis_host" { print }' \
+    "$module_stage/$module_base/modules.alias" >>"$work_dir/$module_base/modules.alias"
+rm -rf "$module_stage"
+
+download "$APK_REPOSITORY/APKINDEX.tar.gz" "$APKINDEX_ARCHIVE"
+tar -xOf "$APKINDEX_ARCHIVE" APKINDEX >"$APKINDEX_FILE"
+
+guest_package_list="$work_dir/.rtpvm-guest-packages"
+python3 - "$APKINDEX_FILE" $GUEST_PACKAGES >"$guest_package_list" <<'PY'
+import pathlib
+import re
+import sys
+
+apkindex_path = pathlib.Path(sys.argv[1])
+root_packages = sys.argv[2:]
+
+
+def dependency_key(token):
+    token = token.strip()
+    if not token or token.startswith("!"):
+        return None
+    token = token.split("@", 1)[0]
+    return re.split(r"[<>=~]", token, maxsplit=1)[0]
+
+
+packages = {}
+providers = {}
+current = {}
+
+
+def add_package(fields):
+    if not fields:
+        return
+
+    name = fields.get("P")
+    version = fields.get("V")
+    if not name or not version:
+        return
+
+    package = {
+        "name": name,
+        "version": version,
+        "dependencies": fields.get("D", "").split(),
+        "providers": fields.get("p", "").split(),
+    }
+    packages[name] = package
+
+    for provider in package["providers"]:
+        key = dependency_key(provider)
+        if key and key not in providers:
+            providers[key] = package
+
+
+for raw_line in apkindex_path.read_text().splitlines():
+    if not raw_line:
+        add_package(current)
+        current = {}
+        continue
+
+    if len(raw_line) > 2 and raw_line[1] == ":":
+        current[raw_line[0]] = raw_line[2:]
+
+add_package(current)
+
+resolved = []
+seen = set()
+pending = list(root_packages)
+
+while pending:
+    token = pending.pop(0)
+    key = dependency_key(token)
+    if not key:
+        continue
+
+    package = packages.get(key) or providers.get(key)
+    if not package:
+        raise SystemExit(f"Unable to resolve Alpine dependency: {token}")
+
+    name = package["name"]
+    if name in seen:
+        continue
+
+    seen.add(name)
+    resolved.append(package)
+    pending.extend(package["dependencies"])
+
+for package in resolved:
+    print(f"{package['name']}|{package['name']}-{package['version']}.apk")
+PY
+
+guest_package_names=""
+while IFS='|' read -r package_name package_file
+do
+    [ -n "$package_name" ] || continue
+    guest_package_names="$guest_package_names $package_name"
+    package_path="$CACHE_DIR/$package_file"
+    download "$APK_REPOSITORY/$package_file" "$package_path"
+    tar -xf "$package_path" -C "$work_dir"
+    rm -f "$work_dir/.PKGINFO" "$work_dir"/.SIGN.* 2>/dev/null || true
+done <"$guest_package_list"
+
+guest_package_names=${guest_package_names# }
+
+if [ ! -e "$work_dir/$module_base" ] && [ -d "$work_dir/usr/lib/modules" ]; then
+    mkdir -p "$work_dir/lib"
+    mv "$work_dir/usr/lib/modules" "$work_dir/lib/modules"
+fi
+
+if [ ! -d "$work_dir/$module_base" ]; then
+    echo "Missing generated module tree after APK extraction: $module_base" >&2
+    exit 1
+fi
+
+# The base initramfs ships kmod binary indexes generated before the extra
+# modules are added. kmod prefers those stale indexes over the text files, so
+# remove them and let modprobe read the updated modules.dep/modules.alias.
+find "$work_dir/$module_base" -maxdepth 1 -type f -name '*.bin' -delete
+
+mkdir -p \
+    "$work_dir/bin" \
+    "$work_dir/sbin" \
+    "$work_dir/dev" \
+    "$work_dir/etc/init.d" \
+    "$work_dir/etc/wireguard" \
+    "$work_dir/root" \
+    "$work_dir/tmp" \
+    "$work_dir/run" \
+    "$work_dir/usr/local/sbin"
+
+ln -sf /sbin/init "$work_dir/init"
+ln -sf /usr/bin/busybox "$work_dir/sbin/init"
+write_rtpvm_inittab "$work_dir/etc/inittab"
+install_initramfs_script "$INITRAMFS_SCRIPT_DIR/rcS" "$work_dir/etc/init.d/rcS"
+install_initramfs_script "$INITRAMFS_SCRIPT_DIR/init-console" "$work_dir/usr/local/sbin/init-console"
+install_init_network_script "$work_dir/usr/local/sbin/init-network"
+
+cp "$WG_SERVER_CONFIG" "$work_dir/etc/wireguard/wg0.conf"
+chmod 0600 "$work_dir/etc/wireguard/wg0.conf"
+
+for applet in \
+    awk cat chmod clear cp cut date dmesg echo env false find grep head hostname \
+    ifconfig ip kill ln ls mkdir mknod more mount mountpoint mv ping ps pwd reset \
+    readlink rm rmdir route sed sh sleep sort stat stty sync tail tar touch true tty umount \
+    uname udhcpc vi wget which
+do
+    ln -sf /usr/bin/busybox "$work_dir/bin/$applet"
+done
+for applet in halt insmod lsmod mdev modinfo modprobe poweroff reboot
+do
+    ln -sf /usr/bin/busybox "$work_dir/sbin/$applet"
+done
+
+if [ -x "$work_dir/sbin/ip" ]; then
+    ln -sf /sbin/ip "$work_dir/bin/ip"
+elif [ -x "$work_dir/usr/sbin/ip" ]; then
+    ln -sf /usr/sbin/ip "$work_dir/bin/ip"
+elif [ -x "$work_dir/usr/bin/ip" ]; then
+    ln -sf /usr/bin/ip "$work_dir/bin/ip"
+fi
+
+mkdir -p "$work_dir/usr/share/udhcpc"
+if [ ! -f "$work_dir/usr/share/udhcpc/default.script" ]; then
+    cat >"$work_dir/usr/share/udhcpc/default.script" <<'EOF'
+#!/bin/sh
+
+[ -n "$interface" ] || exit 1
+
+case "$1" in
+deconfig)
+    ip addr flush dev "$interface" 2>/dev/null || ifconfig "$interface" 0.0.0.0 2>/dev/null || true
+    ;;
+bound|renew)
+    ip link set dev "$interface" up 2>/dev/null || ifconfig "$interface" up 2>/dev/null || true
+    ip addr flush dev "$interface" 2>/dev/null || true
+
+    if [ -n "$subnet" ]; then
+        if [ -n "$broadcast" ]; then
+            ifconfig "$interface" "$ip" netmask "$subnet" broadcast "$broadcast" up
+        else
+            ifconfig "$interface" "$ip" netmask "$subnet" up
+        fi
+    else
+        ifconfig "$interface" "$ip" up
+    fi
+
+    if [ -n "$router" ]; then
+        for gateway in $router; do
+            ip route replace default via "$gateway" dev "$interface" 2>/dev/null \
+                || route add default gw "$gateway" dev "$interface" 2>/dev/null \
+                || true
+            break
+        done
+    fi
+
+    if [ -n "$dns" ]; then
+        : >/etc/resolv.conf
+        for nameserver in $dns; do
+            echo "nameserver $nameserver" >>/etc/resolv.conf
+        done
+    fi
+    ;;
+esac
+
+exit 0
+EOF
+fi
+chmod 0755 "$work_dir/usr/share/udhcpc/default.script"
+
+write_initramfs_archive "$work_dir" "$rtpvm_initramfs"
+rm -rf "$work_dir"
+trap - EXIT HUP INT TERM
+
+kernel_image="$ASSET_DIR/Image-$kernel_flavor"
+kernel_args="console=hvc0 rdinit=/sbin/init modules=virtio_pci,virtio_mmio,virtio_console"
+
+cat >"$ISO_EXTRACT_DIR/manifest.env" <<EOF
+ALPINE_VERSION=$ALPINE_VERSION
+ALPINE_BRANCH=$ALPINE_BRANCH
+ALPINE_ARCH=$ALPINE_ARCH
+ALPINE_FLAVOR=$ALPINE_FLAVOR
+KERNEL_FLAVOR=$kernel_flavor
+KERNEL=$kernel_image
+BASE_INITRAMFS=$base_initramfs
+INITRAMFS=$rtpvm_initramfs
+KERNEL_ARGS=$kernel_args
+GUEST_PACKAGES=$guest_package_names
+WG_SERVER_CONFIG=$WG_SERVER_CONFIG
+WG_CLIENT_CONFIG=$WG_CLIENT_CONFIG
+WG_SERVER_ADDRESS=$WG_SERVER_ADDRESS
+WG_CLIENT_ADDRESS=$WG_CLIENT_ADDRESS
+WG_CLIENT_ALLOWED_IP=$WG_CLIENT_ALLOWED_IP
+WG_ALLOWED_IPS=$WG_ALLOWED_IPS
+WG_ROUTE_SOURCE=$WG_ROUTE_SOURCE
+WG_ENDPOINT_PLACEHOLDER=$WG_ENDPOINT_PLACEHOLDER
+EOF
+
+cat <<EOF
+Prepared ephemeral Alpine RTPVM assets:
+  Kernel:            $kernel_image
+  RTPVM initramfs:    $rtpvm_initramfs
+  Base initramfs:    $base_initramfs
+  Server WG config:   $WG_SERVER_CONFIG
+  Client WG config:   $WG_CLIENT_CONFIG
+  Kernel modules:    $kernel_release RNDIS/WireGuard/netfilter/NAT modules from $kernel_apk_name
+  Guest packages:   $guest_package_names
+  Kernel arguments:  $kernel_args
+EOF
