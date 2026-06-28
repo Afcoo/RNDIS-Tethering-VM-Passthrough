@@ -1,4 +1,4 @@
-# RNDIS Tethering VM Passthrough
+# RTVMP: RNDIS Tethering VM Passthrough
 
 [한국어](./README.md) | [English](./README.en.md)
 
