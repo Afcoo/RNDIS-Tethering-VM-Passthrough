@@ -29,15 +29,15 @@ xattr -dr com.apple.quarantine "/Applications/RTVMP.app"
 3. In the app, open `VM Setup` -> `Load Folder` and select the generated
    `assets` folder.
 
-4. Connect the RNDIS USB tethering device to the Mac, then select the device to
-   use for the VM in `USB Devices`.
+4. Connect the USB tethering device to the Mac, then select VM to use the device
+   <video src="https://github.com/user-attachments/assets/d285ed13-9bf3-4030-ad34-f04cd9de4e34" width="120" controls></video>
 
-5. Press `Start VM` in the top-right corner, then select the passthrough device
+6. Press `Start VM` in the top-right corner, then select the passthrough device
    in `USB Devices` and press `Attach`.
 
-6. Copy or save the host `.conf` from `WireGuard`.
+7. Copy or save the host `.conf` from `WireGuard`.
 
-7. Install WireGuard tools.
+8. Install WireGuard tools.
 
 ```sh
 brew install wireguard-tools wireguard-go
