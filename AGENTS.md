@@ -8,7 +8,7 @@ WireGuard-over-VZNAT architecture as the baseline.
 
 - The app is a SwiftUI Dock app, not a CLI `main.swift` entrypoint.
 - The Xcode project is `RNDIS Tethering VM Passthrough.xcodeproj`.
-- The main app target is `LinuxVirtualMachine` and builds a macOS app bundle.
+- The main app target is `RTPVM` and builds a macOS app bundle.
 - There is no host packet-tunnel extension target. The app does not create a
   host VPN, and does not inspect or forward packet payloads.
 - Linux assets are not bundled. Users load the generated asset folder or select
@@ -90,18 +90,18 @@ macOS WireGuard client
 
 ## Directory Guide
 
-- `LinuxVirtualMachine/App`: SwiftUI app entrypoint and top-level commands.
-- `LinuxVirtualMachine/Views`: setup, USB, console, and WireGuard views.
-- `LinuxVirtualMachine/Stores`: `TetheringStore` orchestration and
+- `RTPVM/App`: SwiftUI app entrypoint and top-level commands.
+- `RTPVM/Views`: setup, USB, console, and WireGuard views.
+- `RTPVM/Stores`: `TetheringStore` orchestration and
   `WireGuardConfigurationLoader` key/config loading and host config rendering.
-- `LinuxVirtualMachine/Services`: AccessoryAccess monitor, VM configuration
+- `RTPVM/Services`: AccessoryAccess monitor, VM configuration
   factory, and VM delegate glue.
-- `LinuxVirtualMachine/Support`: file picker, clipboard, and runtime entitlement
+- `RTPVM/Support`: file picker, clipboard, and runtime entitlement
   reader helpers.
-- `LinuxVirtualMachine/GuestScripts`: currently empty. The generated RTPVM
+- `RTPVM/GuestScripts`: currently empty. The generated RTPVM
   initramfs includes a server WireGuard config but still does not install or
   start a guest WireGuard setup script.
-- `LinuxVirtualMachine/Models`: sidebar sections, USB accessory records, VM
+- `RTPVM/Models`: sidebar sections, USB accessory records, VM
   state, and WireGuard settings.
 - `script`: local build/run/debug/verify entrypoints and Alpine asset
   generation.
@@ -157,7 +157,7 @@ macOS WireGuard client
   app bundle identifier there. The local file is intentionally ignored by Git.
 - Do not hard-code a personal development team ID, provisioning profile, or local
   bundle identifier into the Xcode project file.
-- `LinuxVirtualMachine.entitlements` is the main app entitlement file used by
+- `RTPVM.entitlements` is the main app entitlement file used by
   the standard app target configurations and includes:
   - `com.apple.developer.accessory-access.usb`
   - `com.apple.security.virtualization`

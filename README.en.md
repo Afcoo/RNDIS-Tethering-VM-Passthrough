@@ -115,7 +115,7 @@ Put your local `DEVELOPMENT_TEAM` and bundle identifier in
 
 ## Layout
 
-- `LinuxVirtualMachine`: SwiftUI app and VM/USB/WireGuard orchestration.
+- `RTPVM`: SwiftUI app and VM/USB/WireGuard orchestration.
 - `script`: asset generation, build/run, and host WireGuard helper.
 - `script/initramfs`: guest BusyBox initramfs source.
 - `Configuration`: signing configuration template.

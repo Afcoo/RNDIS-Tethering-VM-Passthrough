@@ -31,7 +31,7 @@
 
 /* Begin PBXFileReference section */
 		374FD25724CBADD100890848 /* RTVMP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RTVMP.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		374FD26124CBAE6700890848 /* LinuxVirtualMachine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LinuxVirtualMachine.entitlements; sourceTree = "<group>"; };
+		374FD26124CBAE6700890848 /* RTPVM.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RTPVM.entitlements; sourceTree = "<group>"; };
 		374FD26224CBAE6700890848 /* Runtime.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runtime.entitlements; sourceTree = "<group>"; };
 		3B6662F3321F8749BDBDDB08 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		415EB883448D759F3C023B32 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -75,7 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				415EB883448D759F3C023B32 /* README.md */,
-				374FD25924CBADD100890848 /* LinuxVirtualMachine */,
+				374FD25924CBADD100890848 /* RTPVM */,
 				8C0000000000000000000202 /* Frameworks */,
 				374FD25824CBADD100890848 /* Products */,
 				7311A096A816DCB7003B6B98 /* Configuration */,
@@ -91,7 +91,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		374FD25924CBADD100890848 /* LinuxVirtualMachine */ = {
+		374FD25924CBADD100890848 /* RTPVM */ = {
 			isa = PBXGroup;
 			children = (
 				8B0000000000000000000201 /* App */,
@@ -101,10 +101,10 @@
 				8B0000000000000000000205 /* Support */,
 				8B0000000000000000000206 /* Views */,
 				8B0000000000000000000113 /* Info.plist */,
-				374FD26124CBAE6700890848 /* LinuxVirtualMachine.entitlements */,
+				374FD26124CBAE6700890848 /* RTPVM.entitlements */,
 				374FD26224CBAE6700890848 /* Runtime.entitlements */,
 			);
-			path = LinuxVirtualMachine;
+			path = RTPVM;
 			sourceTree = "<group>";
 		};
 		7311A096A816DCB7003B6B98 /* Configuration */ = {
@@ -196,9 +196,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		374FD25624CBADD100890848 /* LinuxVirtualMachine */ = {
+		374FD25624CBADD100890848 /* RTPVM */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "LinuxVirtualMachine" */;
+			buildConfigurationList = 374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "RTPVM" */;
 			buildPhases = (
 				374FD25324CBADD100890848 /* Sources */,
 				374FD25424CBADD100890848 /* Frameworks */,
@@ -208,7 +208,7 @@
 			);
 			dependencies = (
 			);
-			name = LinuxVirtualMachine;
+			name = RTPVM;
 			packageProductDependencies = (
 				8E0000000000000000000102 /* SwiftTerm */,
 			);
@@ -247,7 +247,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				374FD25624CBADD100890848 /* LinuxVirtualMachine */,
+				374FD25624CBADD100890848 /* RTPVM */,
 			);
 		};
 /* End PBXProject section */
@@ -413,13 +413,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/LinuxVirtualMachine.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RTPVM/RTPVM.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.0.1;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_FILE = RTPVM/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -438,13 +438,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/LinuxVirtualMachine.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RTPVM/RTPVM.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.0.1;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_FILE = RTPVM/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -525,13 +525,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E3865CF719CB3E4197A4D3A9 /* BuildSettings.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = LinuxVirtualMachine/Runtime.entitlements;
+				CODE_SIGN_ENTITLEMENTS = RTPVM/Runtime.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 0.0.1;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = LinuxVirtualMachine/Info.plist;
+				INFOPLIST_FILE = RTPVM/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RTVMP;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -559,7 +559,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "LinuxVirtualMachine" */ = {
+		374FD25E24CBADD100890848 /* Build configuration list for PBXNativeTarget "RTPVM" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				374FD25F24CBADD100890848 /* Debug */,

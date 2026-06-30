@@ -112,7 +112,7 @@ cp Configuration/LocalSigning.xcconfig.example Configuration/LocalSigning.xcconf
 
 ## 디렉터리
 
-- `LinuxVirtualMachine`: SwiftUI app, VM/USB/WireGuard orchestration.
+- `RTPVM`: SwiftUI app, VM/USB/WireGuard orchestration.
 - `script`: asset 생성, build/run, host WireGuard helper.
 - `script/initramfs`: guest BusyBox initramfs source.
 - `Configuration`: signing 설정 template.

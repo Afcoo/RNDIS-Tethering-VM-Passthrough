@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "374FD25624CBADD100890848"
                BuildableName = "RTVMP.app"
-               BlueprintName = "LinuxVirtualMachine"
+               BlueprintName = "RTPVM"
 	               ReferencedContainer = "container:RNDIS Tethering VM Passthrough.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,7 +46,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "374FD25624CBADD100890848"
             BuildableName = "RTVMP.app"
-            BlueprintName = "LinuxVirtualMachine"
+            BlueprintName = "RTPVM"
 	            ReferencedContainer = "container:RNDIS Tethering VM Passthrough.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -63,7 +63,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "374FD25624CBADD100890848"
             BuildableName = "RTVMP.app"
-            BlueprintName = "LinuxVirtualMachine"
+            BlueprintName = "RTPVM"
 	            ReferencedContainer = "container:RNDIS Tethering VM Passthrough.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
