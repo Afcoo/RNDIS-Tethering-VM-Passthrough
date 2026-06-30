@@ -30,6 +30,7 @@ final class USBAccessoryCoordinator {
     private var autoAttachSuppressedUntilByDescriptor: [String: Date] = [:]
     private var manuallyDetachedDescriptorKeys: Set<String> = []
     private var manualDetachEventSuppressedUntilByDescriptor: [String: Date] = [:]
+    private var manualDetachEventSuppressedUntilByRegistryID: [UInt64: Date] = [:]
     private var manualPassthroughDisconnectSuppressedUntil: Date?
 
     private(set) var accessories: [USBAccessoryRecord] = []
@@ -120,6 +121,7 @@ final class USBAccessoryCoordinator {
         pendingAttachAccessoryID = nil
         manuallyDetachedDescriptorKeys.removeAll()
         manualDetachEventSuppressedUntilByDescriptor.removeAll()
+        manualDetachEventSuppressedUntilByRegistryID.removeAll()
         manualPassthroughDisconnectSuppressedUntil = nil
         notifyStateChanged()
 
@@ -138,6 +140,7 @@ final class USBAccessoryCoordinator {
         autoAttachSuppressedUntilByDescriptor.removeAll()
         manuallyDetachedDescriptorKeys.removeAll()
         manualDetachEventSuppressedUntilByDescriptor.removeAll()
+        manualDetachEventSuppressedUntilByRegistryID.removeAll()
         manualPassthroughDisconnectSuppressedUntil = nil
         notifyStateChanged()
     }
@@ -181,6 +184,7 @@ final class USBAccessoryCoordinator {
 
         manuallyDetachedDescriptorKeys.remove(record.descriptorIdentityKey)
         manualDetachEventSuppressedUntilByDescriptor.removeValue(forKey: record.descriptorIdentityKey)
+        manualDetachEventSuppressedUntilByRegistryID.removeValue(forKey: selectedAccessoryID)
         attach(accessory, record: record, to: virtualMachine, reason: "manual request")
     }
 
@@ -212,6 +216,7 @@ final class USBAccessoryCoordinator {
                     if let detachedRecord {
                         self.manuallyDetachedDescriptorKeys.remove(detachedRecord.descriptorIdentityKey)
                         self.manualDetachEventSuppressedUntilByDescriptor.removeValue(forKey: detachedRecord.descriptorIdentityKey)
+                        self.manualDetachEventSuppressedUntilByRegistryID.removeValue(forKey: detachedRecord.id)
                     }
                     self.manualPassthroughDisconnectSuppressedUntil = nil
                     self.onStatusMessage?(error.localizedDescription)
@@ -434,6 +439,7 @@ final class USBAccessoryCoordinator {
         let suppressedUntil = Date().addingTimeInterval(USBPassthroughPolicy.manualDetachAccessoryEventGraceInterval)
         manuallyDetachedDescriptorKeys.insert(record.descriptorIdentityKey)
         manualDetachEventSuppressedUntilByDescriptor[record.descriptorIdentityKey] = suppressedUntil
+        manualDetachEventSuppressedUntilByRegistryID[record.id] = suppressedUntil
         onEvent?("USB manual detach policy: keeping \(record.registryIDText) in the device list and blocking automatic reattach until the next manual attach.")
     }
 
@@ -474,13 +480,31 @@ final class USBAccessoryCoordinator {
     }
 
     private func manualDetachEventSuppressionRemaining(for record: USBAccessoryRecord) -> TimeInterval? {
-        guard let suppressedUntil = manualDetachEventSuppressedUntilByDescriptor[record.descriptorIdentityKey] else {
+        if let remaining = suppressionRemaining(
+            until: manualDetachEventSuppressedUntilByDescriptor[record.descriptorIdentityKey],
+            onExpired: {
+                manualDetachEventSuppressedUntilByDescriptor[record.descriptorIdentityKey] = nil
+            }
+        ) {
+            return remaining
+        }
+
+        return suppressionRemaining(
+            until: manualDetachEventSuppressedUntilByRegistryID[record.id],
+            onExpired: {
+                manualDetachEventSuppressedUntilByRegistryID[record.id] = nil
+            }
+        )
+    }
+
+    private func suppressionRemaining(until suppressedUntil: Date?, onExpired: () -> Void) -> TimeInterval? {
+        guard let suppressedUntil else {
             return nil
         }
 
         let now = Date()
         guard suppressedUntil > now else {
-            manualDetachEventSuppressedUntilByDescriptor[record.descriptorIdentityKey] = nil
+            onExpired()
             return nil
         }
 
